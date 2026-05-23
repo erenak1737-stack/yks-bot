@@ -78,7 +78,7 @@ async def on_ready():
     saatlik_bildirim.start()
 
 
-@tasks.loop(hours=1)
+@tasks.loop(hours=6)
 async def saatlik_bildirim():
     kanal = bot.get_channel(CHANNEL_ID)
     if kanal is None:
