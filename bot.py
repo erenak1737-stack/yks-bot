@@ -84,7 +84,7 @@ async def saatlik_bildirim():
     if kanal is None:
         print("⚠️  Kanal bulunamadı — CHANNEL_ID'yi kontrol et.")
         return
-    await kanal.send(content=f"<@{USER_ID}>", embed=yks_embed())
+    await kanal.send(embed=yks_embed())
 
 
 @saatlik_bildirim.before_loop
@@ -94,12 +94,12 @@ async def bildirim_baslangic():
 
 @bot.command(name="yks")
 async def yks_komut(ctx):
-    await ctx.send(content=f"<@{USER_ID}>", embed=yks_embed())
+    await ctx.send(embed=yks_embed())
 
 
 @bot.command(name="komut")
 async def komut(ctx):
-    await ctx.send(content=f"<@{USER_ID}>", embed=yks_embed())
+    await ctx.send(embed=yks_embed())
 
 
 bot.run(TOKEN)
