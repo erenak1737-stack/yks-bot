@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, time
 import os
 from dotenv import load_dotenv
 
@@ -76,6 +76,7 @@ def yks_embed():
 async def on_ready():
     print(f"✅ {bot.user.name} olarak giriş yapıldı!")
     saatlik_bildirim.start()
+    gece_yarisi_mesaj.start()
 
 
 @tasks.loop(hours=6)
@@ -84,7 +85,7 @@ async def saatlik_bildirim():
     if kanal is None:
         print("⚠️  Kanal bulunamadı — CHANNEL_ID'yi kontrol et.")
         return
-    await kanal.send(embed=yks_embed())
+    await kanal.send(content=f"<@{USER_ID}>", embed=yks_embed())
 
 
 @saatlik_bildirim.before_loop
@@ -92,14 +93,29 @@ async def bildirim_baslangic():
     await bot.wait_until_ready()
 
 
+# 00:00 Türkiye saati = 21:00 UTC
+@tasks.loop(time=time(hour=21, minute=0, tzinfo=timezone.utc))
+async def gece_yarisi_mesaj():
+    kanal = bot.get_channel(CHANNEL_ID)
+    if kanal is None:
+        print("⚠️  Kanal bulunamadı.")
+        return
+    await kanal.send("Başladı lan mesain amk çocuğu geç pc başına")
+
+
+@gece_yarisi_mesaj.before_loop
+async def gece_yarisi_baslangic():
+    await bot.wait_until_ready()
+
+
 @bot.command(name="yks")
 async def yks_komut(ctx):
-    await ctx.send(embed=yks_embed())
+    await ctx.send(content=f"<@{USER_ID}>", embed=yks_embed())
 
 
 @bot.command(name="komut")
 async def komut(ctx):
-    await ctx.send(embed=yks_embed())
+    await ctx.send(content=f"<@{USER_ID}>", embed=yks_embed())
 
 
 bot.run(TOKEN)
