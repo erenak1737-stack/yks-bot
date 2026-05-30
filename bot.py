@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-from datetime import datetime, timezone, timedelta, time
+from datetime import datetime, timezone, timedelta
 import os
 from dotenv import load_dotenv
 
@@ -76,7 +76,6 @@ def yks_embed():
 async def on_ready():
     print(f"✅ {bot.user.name} olarak giriş yapıldı!")
     saatlik_bildirim.start()
-    gece_yarisi_mesaj.start()
 
 
 @tasks.loop(hours=6)
@@ -90,21 +89,6 @@ async def saatlik_bildirim():
 
 @saatlik_bildirim.before_loop
 async def bildirim_baslangic():
-    await bot.wait_until_ready()
-
-
-# 00:00 Türkiye saati = 21:00 UTC
-@tasks.loop(time=time(hour=21, minute=0, tzinfo=timezone.utc))
-async def gece_yarisi_mesaj():
-    kanal = bot.get_channel(CHANNEL_ID)
-    if kanal is None:
-        print("⚠️  Kanal bulunamadı.")
-        return
-    await kanal.send("Başladı lan mesain amk çocuğu geç pc başına")
-
-
-@gece_yarisi_mesaj.before_loop
-async def gece_yarisi_baslangic():
     await bot.wait_until_ready()
 
 
