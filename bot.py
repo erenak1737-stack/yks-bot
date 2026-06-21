@@ -10,9 +10,9 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 USER_ID = 708319733942059069
 
-# TYT: 20 Haziran 2026 - 10:15 (Türkiye saati UTC+3)
+# TYT: 20 Haziran 2027 - 10:15 (Türkiye saati UTC+3) — kesin tarih açıklanınca güncelle
 TZ_TR = timezone(timedelta(hours=3))
-YKS_DATETIME = datetime(2026, 6, 20, 10, 15, 0, tzinfo=TZ_TR)
+YKS_DATETIME = datetime(2027, 6, 20, 10, 15, 0, tzinfo=TZ_TR)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -84,7 +84,7 @@ async def saatlik_bildirim():
     if kanal is None:
         print("⚠️  Kanal bulunamadı — CHANNEL_ID'yi kontrol et.")
         return
-    await kanal.send(content=f"<@{USER_ID}>", embed=yks_embed())
+    await kanal.send(content=f"<@{USER_ID}> 1 Milyon sıralama yapan Gmail kafa basmail için mezuna bıraktım sayacı", embed=yks_embed())
 
 
 @saatlik_bildirim.before_loop
