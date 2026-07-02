@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, timedelta
+import feedparser
 import os
 from dotenv import load_dotenv
 
@@ -10,9 +11,14 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 USER_ID = 708319733942059069
 
-# TYT: 20 Haziran 2027 - 10:15 (Türkiye saati UTC+3) — kesin tarih açıklanınca güncelle
 TZ_TR = timezone(timedelta(hours=3))
-YKS_DATETIME = datetime(2027, 6, 20, 10, 15, 0, tzinfo=TZ_TR)
+
+RSS_KAYNAKLAR = [
+    ("NTV", "https://www.ntv.com.tr/gundem.rss"),
+    ("Hürriyet", "https://www.hurriyet.com.tr/rss/anasayfa"),
+    ("Sabah", "https://www.sabah.com.tr/rss/anasayfa.xml"),
+    ("Milliyet", "https://www.milliyet.com.tr/rss/rssnew/gundemrss.xml"),
+]
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -20,86 +26,70 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 
-def sure_hesapla():
+def haber_al():
+    haberler = []
+    for kaynak_adi, url in RSS_KAYNAKLAR:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:2]:  # Her kaynaktan 2 haber
+                baslik = entry.get("title", "").strip()
+                link = entry.get("link", "")
+                if baslik:
+                    haberler.append((kaynak_adi, baslik, link))
+        except Exception:
+            continue
+    return haberler
+
+
+def haber_embed():
     simdi = datetime.now(TZ_TR)
-    fark = YKS_DATETIME - simdi
-    toplam_saniye = int(fark.total_seconds())
-
-    if toplam_saniye <= 0:
-        return None  # Sınav geçti
-
-    gun = fark.days
-    kalan_saniye = toplam_saniye - (gun * 86400)
-    saat = kalan_saniye // 3600
-    dakika = (kalan_saniye % 3600) // 60
-
-    return gun, saat, dakika
-
-
-def yks_embed():
-    simdi = datetime.now(TZ_TR)
-    sure = sure_hesapla()
-
-    if sure is None:
-        embed = discord.Embed(
-            title="✅ YKS Tamamlandı",
-            description="YKS sınavı geçti. Başarılar dileriz!",
-            color=0xE74C3C,
-        )
-        embed.set_footer(text="Developed by erenzei")
-        return embed
-
-    gun, saat, dakika = sure
-
-    if gun == 0 and saat == 0 and dakika == 0:
-        embed = discord.Embed(
-            title="🎉 Bugün YKS Günü!",
-            description="Tüm adaylara bol şans! 🍀",
-            color=0x2ECC71,
-        )
-        embed.set_footer(text="Developed by erenzei")
-        return embed
+    haberler = haber_al()
 
     embed = discord.Embed(
-        title="📚 YKS TYT Geri Sayım",
-        description=f"**{gun} gün {saat} saat {dakika} dakika kaldı!**",
-        color=0x3498DB,
+        title=f"📰 Gündem — {simdi.strftime('%d.%m.%Y')}",
+        description="Bugünün öne çıkan haberleri:",
+        color=0x2C3E50,
     )
-    embed.add_field(name="🗓️ Sınav Tarihi", value="20 Haziran 2026 - Cumartesi", inline=True)
-    embed.add_field(name="⏰ Sınav Saati", value="10:15", inline=True)
-    embed.add_field(name="📆 Şu An", value=simdi.strftime("%d.%m.%Y %H:%M"), inline=True)
-    embed.set_footer(text="Çalış, başarı gelecek! 💪 | Developed by erenzei")
+
+    if not haberler:
+        embed.description = "Haberler alınamadı, lütfen daha sonra tekrar dene."
+    else:
+        for kaynak, baslik, link in haberler:
+            embed.add_field(
+                name=f"🔹 {kaynak}",
+                value=f"[{baslik}]({link})" if link else baslik,
+                inline=False,
+            )
+
+    embed.set_footer(text=f"⏰ {simdi.strftime('%H:%M')} | Developed by erenzei")
     return embed
 
 
 @bot.event
 async def on_ready():
     print(f"✅ {bot.user.name} olarak giriş yapıldı!")
-    saatlik_bildirim.start()
+    gunluk_haber.start()
 
 
-@tasks.loop(hours=6)
-async def saatlik_bildirim():
-    kanal = bot.get_channel(CHANNEL_ID)
-    if kanal is None:
-        print("⚠️  Kanal bulunamadı — CHANNEL_ID'yi kontrol et.")
-        return
-    await kanal.send(content=f"<@{USER_ID}> 1 Milyon sıralama yapan Gmail kafa basmail için mezuna bıraktım sayacı", embed=yks_embed())
+@tasks.loop(minutes=1)
+async def gunluk_haber():
+    simdi = datetime.now(TZ_TR)
+    if simdi.hour == 10 and simdi.minute == 0:
+        kanal = bot.get_channel(CHANNEL_ID)
+        if kanal is None:
+            print("⚠️ Kanal bulunamadı.")
+            return
+        await kanal.send(content=f"<@{USER_ID}>", embed=haber_embed())
 
 
-@saatlik_bildirim.before_loop
-async def bildirim_baslangic():
+@gunluk_haber.before_loop
+async def baslangic():
     await bot.wait_until_ready()
 
 
-@bot.command(name="yks")
-async def yks_komut(ctx):
-    await ctx.send(content=f"<@{USER_ID}>", embed=yks_embed())
-
-
-@bot.command(name="komut")
-async def komut(ctx):
-    await ctx.send(content=f"<@{USER_ID}>", embed=yks_embed())
+@bot.command(name="haber")
+async def haber_komut(ctx):
+    await ctx.send(content=f"<@{USER_ID}>", embed=haber_embed())
 
 
 bot.run(TOKEN)
