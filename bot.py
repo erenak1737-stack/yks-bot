@@ -18,6 +18,8 @@ RSS_KAYNAKLAR = [
     ("Hürriyet", "https://www.hurriyet.com.tr/rss/anasayfa"),
     ("Sabah", "https://www.sabah.com.tr/rss/anasayfa.xml"),
     ("Milliyet", "https://www.milliyet.com.tr/rss/rssnew/gundemrss.xml"),
+    ("⚽ Hürriyet Spor", "https://www.hurriyet.com.tr/rss/spor"),
+    ("🎮 Webtekno", "https://www.webtekno.com/rss.xml"),
 ]
 
 intents = discord.Intents.default()
@@ -79,7 +81,7 @@ async def gunluk_haber():
         if kanal is None:
             print("⚠️ Kanal bulunamadı.")
             return
-        await kanal.send(content=f"<@{USER_ID}>", embed=haber_embed())
+        await kanal.send(embed=haber_embed())
 
 
 @gunluk_haber.before_loop
@@ -89,7 +91,7 @@ async def baslangic():
 
 @bot.command(name="haber")
 async def haber_komut(ctx):
-    await ctx.send(content=f"<@{USER_ID}>", embed=haber_embed())
+    await ctx.send(embed=haber_embed())
 
 
 bot.run(TOKEN)
